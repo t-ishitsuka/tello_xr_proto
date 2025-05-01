@@ -1,0 +1,66 @@
+# Python 仮想環境
+venv/
+env/
+ENV/
+
+# Python のキャッシュファイル
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.so
+.Python
+
+# ビルド関連
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE関連
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ログとデータファイル
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+*.seed
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.mov
+*.mp4
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# macOS固有
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 環境設定ファイル
+.env
+.venv
+env/
+venv/
+ENV/

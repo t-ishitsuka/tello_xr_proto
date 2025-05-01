@@ -9,18 +9,18 @@
 - HDMI 経由の XR ヘッドセットに映像出力（外部ディスプレイ扱い）
 - Unity 移行を前提としたシンプルなモジュール構造
 
-## 🧱 ディレクトリ構成（予定）
+## 🧱 ディレクトリ構成
 
 ```bash
 tello_xr_proto/
-  ├── controller.py # ゲームパッド入力の処理
-  ├── tello_control.py # Telloへのコマンド送信（UDP）
-  ├── video_stream.py # Telloの映像ストリームを受信・表示
+  ├── controller.py # ゲームパッド入力の処理（予定）
+  ├── tello_control.py # Telloへのコマンド送信（予定）
+  ├── video_stream.py # Telloの映像ストリームを受信・表示（予定）
   ├── main.py # 各モジュールを統合・実行
+  ├── requirements.txt # 依存パッケージの一覧
+  ├── Makefile # 開発補助コマンド集
   └── README.md # このファイル
 ```
-
-> 注：現在はプロジェクト初期段階であり、上記のファイル構成は開発計画です。
 
 ## 🛠 必要環境
 
@@ -37,25 +37,42 @@ tello_xr_proto/
 git clone https://github.com/t-ishitsuka/tello_xr_proto.git
 cd tello_xr_proto
 
-# 仮想環境の作成（任意）
+# Makefileを使って環境を構築（推奨）
+make install
+
+# または手動で仮想環境を作成
 python3 -m venv venv
 source venv/bin/activate  # Windowsは venv\Scripts\activate
-
-# 依存ライブラリをインストール（開発中）
-# pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-> 注：現在は開発初期段階のため、requirements.txt ファイルは未作成です。開発が進み次第、必要なライブラリを追加します。
+## 🛠️ 開発コマンド
+
+プロジェクトには Makefile が用意されており、以下のコマンドが利用可能です：
+
+```bash
+make venv      # 仮想環境を作成
+make install   # 依存パッケージをインストール
+make activate  # 仮想環境に接続するためのコマンドを表示
+make run       # メインプログラムを実行
+make clean     # 一時ファイルとキャッシュを削除
+```
 
 ## 🎮 操作方法
 
 Tello を起動し、PC を Tello の Wi-Fi に接続
 
-メインスクリプトを実行（開発中）：
+メインスクリプトを実行：
 
 ```bash
-# 開発完了後に動作予定
-# python main.py
+# 仮想環境を有効化
+source venv/bin/activate  # Windowsは venv\Scripts\activate
+
+# プログラムを実行
+python main.py
+
+# またはMakefileを使用
+make run
 ```
 
 計画している操作方法：
@@ -73,10 +90,11 @@ Tello を起動し、PC を Tello の Wi-Fi に接続
 - XR ゴーグルは外部ディスプレイとして認識される必要があります
 - Unity 対応に向けた拡張も視野に入れています
 
-## 📅 開発状況
+## 📅 開発状況（2025 年 5 月 1 日現在）
 
 - [x] プロジェクト構想の策定
 - [x] リポジトリの作成
+- [x] 開発環境の構築（Python 仮想環境、パッケージ管理）
 - [ ] 基本的なドローン制御モジュールの実装
 - [ ] ゲームパッド入力の連携
 - [ ] 映像ストリーミング処理の実装

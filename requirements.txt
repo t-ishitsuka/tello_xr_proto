@@ -1,0 +1,4 @@
+# Python dependencies for tello_xr_proto project
+# Core libraries
+numpy==2.2.5
+opencv-python==4.11.0.86

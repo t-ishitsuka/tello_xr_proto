@@ -2,3 +2,4 @@
 # Core libraries
 numpy==2.2.5
 opencv-python==4.11.0.86
+pygame==2.6.0  # ゲームコントローラー入力用

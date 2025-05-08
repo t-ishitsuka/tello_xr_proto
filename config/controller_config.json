@@ -1,0 +1,24 @@
+{
+  "deadzone": 0.15,
+  "axis_mapping": {
+    "move_x": 0,
+    "move_y": 1,
+    "move_z": 3,
+    "rotation": 2
+  },
+  "button_mapping": {
+    "takeoff": 0,
+    "land": 1,
+    "emergency": 2,
+    "photo": 3
+  },
+  "invert_axis": {
+    "move_y": true,
+    "move_z": true
+  },
+  "sensitivity": {
+    "move_xy": 1.0,
+    "move_z": 0.7,
+    "rotation": 0.8
+  }
+}

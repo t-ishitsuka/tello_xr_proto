@@ -46,3 +46,14 @@ extend-exclude = '''
   | dist
 )/
 '''
+
+[tool.isort]
+profile = "black"  # Blackとの互換性を確保
+line_length = 100  # 行の最大長をBlackと同じに
+multi_line_output = 3  # 複数行インポートの形式
+include_trailing_comma = true  # 複数行インポートの最後にカンマを付ける
+force_grid_wrap = 0  # インポートのグリッドラップを強制しない
+use_parentheses = true  # 括弧を使用する
+ensure_newline_before_comments = true  # コメントの前に改行を入れる
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]  # インポートのセクション
+known_first_party = ["tello_control", "video_stream", "controller_input"]  # ファーストパーティモジュール

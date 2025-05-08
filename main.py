@@ -5,8 +5,10 @@ Telloドローンからのビデオストリームを表示し、制御するメ
 """
 import sys
 import time
+
 from tello_control import TelloControl
 from video_stream import VideoStream
+
 
 def main():
     """メイン実行関数"""

@@ -3,10 +3,10 @@ Controller Input Module for Tello XR Prototype
 This module handles game controller detection, initialization, and input processing.
 """
 
-import pygame
 import logging
 import time
-from typing import Dict, List, Optional, Tuple, Union
+
+import pygame
 
 
 class ControllerManager:
@@ -106,7 +106,7 @@ class ControllerManager:
             self.logger.warning(f"Controller ID {controller_id} not found")
             return False
     
-    def get_controller_names(self) -> List[Tuple[int, str]]:
+    def get_controller_names(self) -> list[tuple[int, str]]:
         """
         Get names of all detected controllers.
         
@@ -147,7 +147,7 @@ class ControllerManager:
         """
         return self.selected_controller is not None
     
-    def get_controller_info(self) -> Optional[Dict]:
+    def get_controller_info(self) -> dict | None:
         """
         Get information about the currently selected controller.
         
@@ -207,7 +207,7 @@ class ControllerManager:
             self.logger.error(f"Error reading button {button_index}: {e}")
             return False
     
-    def read_hat(self, hat_index: int) -> Tuple[int, int]:
+    def read_hat(self, hat_index: int) -> tuple[int, int]:
         """
         Read the values of a hat (D-pad) from the selected controller.
         
@@ -231,7 +231,7 @@ class ControllerManager:
             self.logger.error(f"Error reading hat {hat_index}: {e}")
             return (0, 0)
     
-    def get_controller_input(self) -> Optional[Dict[str, Union[List[float], List[bool], List[Tuple[int, int]]]]]:
+    def get_controller_input(self) -> dict[str, list[float] | list[bool] | list[tuple[int, int]]] | None:
         """
         Get the current input state from the selected controller.
         
@@ -265,7 +265,7 @@ class ControllerManager:
         
         return controller_input
     
-    def get_normalized_input(self) -> Optional[Dict[str, Dict[str, Union[float, bool]]]]:
+    def get_normalized_input(self) -> dict[str, dict[str, float | bool]] | None:
         """
         Get normalized input values mapped to more intuitive controls.
         Normalizes common controller layouts to standard movement controls.
@@ -322,7 +322,7 @@ class ControllerManager:
             'buttons': buttons,
         }
     
-    def read_all_inputs(self) -> Dict:
+    def read_all_inputs(self) -> dict:
         """
         Read all inputs from the selected controller.
         

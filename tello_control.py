@@ -34,7 +34,7 @@ class TelloControl:
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             return True
-        except socket.error as e:
+        except OSError as e:
             print(f"ソケット作成失敗: {e}")
             return False
     

@@ -1,0 +1,21 @@
+{
+  "editor.formatOnSave": true,
+  "python.formatting.provider": "black",
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+  },
+  "isort.args": [
+    "--profile",
+    "black"
+  ],
+  "python.linting.enabled": true,
+  "python.linting.ruffEnabled": true,
+  "python.linting.mypyEnabled": false,
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": false,
+  "python.linting.lintOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  }
+}

@@ -170,6 +170,31 @@ class TelloControl:
 
         return self.send_command(f"{direction} {degrees_val}", wait_time=3)
 
+    def send_rc_control(self, left_right: int, forward_backward: int, up_down: int, yaw: int) -> bool:
+        """
+        RCコントロールコマンドを送信する（リアルタイムの速度制御）
+
+        Parameters:
+            left_right (int): 左右の速度 (-100 ~ +100, 右が正)
+            forward_backward (int): 前後の速度 (-100 ~ +100, 前が正)
+            up_down (int): 上下の速度 (-100 ~ +100, 上が正)
+            yaw (int): 回転速度 (-100 ~ +100, 右回りが正)
+
+        Returns:
+            bool: 成功したらTrue
+        """
+        # 値の範囲を制限
+        left_right = max(-100, min(100, int(left_right)))
+        forward_backward = max(-100, min(100, int(forward_backward)))
+        up_down = max(-100, min(100, int(up_down)))
+        yaw = max(-100, min(100, int(yaw)))
+        
+        # rcコマンドの送信（待機時間はほぼ0）
+        return self.send_command(
+            f"rc {left_right} {forward_backward} {up_down} {yaw}", 
+            wait_time=0.05
+        )
+
     def close(self):
         """ソケット接続を閉じる"""
         if self.sock:

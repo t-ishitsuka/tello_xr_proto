@@ -31,3 +31,18 @@ ignore = []
 [tool.ruff.lint.isort]
 # isort設定
 known-first-party = ["tello_control", "video_stream"]
+
+[tool.black]
+# Blackの設定
+line-length = 100
+target-version = ["py310"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''

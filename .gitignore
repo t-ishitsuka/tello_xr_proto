@@ -31,7 +31,7 @@ wheels/
 
 # IDE関連
 .idea/
-.vscode/
+# .vscode/
 *.swp
 *.swo
 *~

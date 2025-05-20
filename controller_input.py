@@ -5,8 +5,8 @@ This module handles game controller detection, initialization, and input process
 
 import json
 import logging
-import time
 import os
+import time
 
 import pygame
 
@@ -14,7 +14,7 @@ import pygame
 class ControllerManager:
     """Manages game controller detection and initialization."""
 
-    def __init__(self, debug: bool = False, config_file: str = None):
+    def __init__(self, debug: bool = False, config_file: str | None = None):
         """
         Initialize the controller manager.
 
@@ -27,7 +27,7 @@ class ControllerManager:
         self.selected_controller = None  # Currently active controller
         self._setup_logging()
         self._initialize_pygame()
-        
+
         # 設定関連の初期化
         self.config = {}
         self.config_file = config_file
@@ -58,14 +58,14 @@ class ControllerManager:
         """
         # デフォルト設定を初期化
         self.config = self.get_default_config()
-        
+
         if not self.config_file:
             self.logger.info("設定ファイルが指定されていません。デフォルト設定を使用します")
             return
-            
+
         try:
             if os.path.exists(self.config_file):
-                with open(self.config_file, 'r', encoding='utf-8') as f:
+                with open(self.config_file, encoding="utf-8") as f:
                     user_config = json.load(f)
                     # デフォルト設定にユーザー設定を上書き
                     self.config.update(user_config)
@@ -75,7 +75,7 @@ class ControllerManager:
                 self.save_default_config()
         except Exception as e:
             self.logger.error(f"設定ファイルの読み込み中にエラーが発生しました: {e}")
-    
+
     def get_default_config(self):
         """
         デフォルトのコントローラー設定を返す
@@ -83,28 +83,28 @@ class ControllerManager:
         return {
             "deadzone": 0.15,
             "axis_mapping": {
-                "move_x": 0,      # 左スティックX軸: 左右移動
-                "move_y": 1,      # 左スティックY軸: 前後移動
-                "move_z": 3,      # 右スティックY軸: 上下移動
-                "rotation": 2     # 右スティックX軸: 回転
+                "move_x": 0,  # 左スティックX軸: 左右移動
+                "move_y": 1,  # 左スティックY軸: 前後移動
+                "move_z": 3,  # 右スティックY軸: 上下移動
+                "rotation": 2,  # 右スティックX軸: 回転
             },
             "button_mapping": {
-                "takeoff": 0,     # A/Xボタン: 離陸
-                "land": 1,        # B/Oボタン: 着陸
-                "emergency": 2,   # X/□ボタン: 緊急停止
-                "photo": 3        # Y/△ボタン: 写真撮影
+                "takeoff": 0,  # A/Xボタン: 離陸
+                "land": 1,  # B/Oボタン: 着陸
+                "emergency": 2,  # X/□ボタン: 緊急停止
+                "photo": 3,  # Y/△ボタン: 写真撮影
             },
             "invert_axis": {
-                "move_y": True,   # 前後移動は反転（前進が-1）
-                "move_z": True    # 上下移動は反転（上昇が-1）
+                "move_y": True,  # 前後移動は反転(前進が-1)
+                "move_z": True,  # 上下移動は反転(上昇が-1)
             },
             "sensitivity": {
-                "move_xy": 1.0,   # 水平移動の感度
-                "move_z": 0.7,    # 垂直移動の感度
-                "rotation": 0.8   # 回転の感度
-            }
+                "move_xy": 1.0,  # 水平移動の感度
+                "move_z": 0.7,  # 垂直移動の感度
+                "rotation": 0.8,  # 回転の感度
+            },
         }
-    
+
     def save_default_config(self):
         """
         デフォルト設定をファイルに保存する
@@ -112,13 +112,13 @@ class ControllerManager:
         if not self.config_file:
             self.logger.warning("設定ファイルパスが指定されていないため、保存できません")
             return False
-            
+
         try:
             # ディレクトリが存在しない場合は作成
             os.makedirs(os.path.dirname(os.path.abspath(self.config_file)), exist_ok=True)
-            
+
             # デフォルト設定を保存
-            with open(self.config_file, 'w', encoding='utf-8') as f:
+            with open(self.config_file, "w", encoding="utf-8") as f:
                 json.dump(self.get_default_config(), f, indent=4, ensure_ascii=False)
             self.logger.info(f"デフォルト設定をファイルに保存しました: {self.config_file}")
             return True
@@ -326,7 +326,8 @@ class ControllerManager:
         Get the current input state from the selected controller.
 
         Returns:
-            Dictionary with controller input states (axes, buttons, hats) or None if no controller is selected
+            Dictionary with controller input states (axes, buttons, hats) 
+            or None if no controller is selected
         """
         if not self.is_controller_available():
             return None
@@ -351,13 +352,14 @@ class ControllerManager:
 
         return controller_input
 
-    def get_normalized_input(self) -> dict[str, dict[str, float | bool]] | None:
+    def get_normalized_input(self) -> dict[str, dict[str, float] | dict[str, bool]] | None:
         """
         Get normalized input values mapped to more intuitive controls.
         Normalizes controller inputs based on configuration settings.
 
         Returns:
-            Dictionary with movement, rotation, and button states or None if no controller is selected
+            Dictionary with movement, rotation, and button states 
+            or None if no controller is selected
         """
         if not self.is_controller_available():
             return None
@@ -368,19 +370,17 @@ class ControllerManager:
 
         # 設定から必要な値を取得
         deadzone = self.config.get("deadzone", 0.15)
-        axis_mapping = self.config.get("axis_mapping", {
-            "move_x": 0, "move_y": 1, "move_z": 3, "rotation": 2
-        })
-        button_mapping = self.config.get("button_mapping", {
-            "takeoff": 0, "land": 1, "emergency": 2, "photo": 3
-        })
-        invert_axis = self.config.get("invert_axis", {
-            "move_y": True, "move_z": True
-        })
-        sensitivity = self.config.get("sensitivity", {
-            "move_xy": 1.0, "move_z": 0.7, "rotation": 0.8
-        })
-        
+        axis_mapping = self.config.get(
+            "axis_mapping", {"move_x": 0, "move_y": 1, "move_z": 3, "rotation": 2}
+        )
+        button_mapping = self.config.get(
+            "button_mapping", {"takeoff": 0, "land": 1, "emergency": 2, "photo": 3}
+        )
+        invert_axis = self.config.get("invert_axis", {"move_y": True, "move_z": True})
+        sensitivity = self.config.get(
+            "sensitivity", {"move_xy": 1.0, "move_z": 0.7, "rotation": 0.8}
+        )
+
         # キャリブレーションデータの取得
         calibration = self.config.get("calibration", {})
         axis_offsets = calibration.get("axis_offsets", {})
@@ -400,7 +400,7 @@ class ControllerManager:
             "photo": False,
         }
 
-        # 軸の入力を適用（設定に基づく）
+        # 軸の入力を適用(設定に基づく)
         axes = raw_input["axes"]
         if len(axes) > 0:
             # 各動きに対応する軸を適用
@@ -408,15 +408,15 @@ class ControllerManager:
                 if axis_index < len(axes):
                     # 生の軸の値を取得
                     value = axes[axis_index]
-                    
-                    # キャリブレーションオフセットを適用（もし存在すれば）
+
+                    # キャリブレーションオフセットを適用(もし存在すれば)
                     offset = float(axis_offsets.get(str(axis_index), 0))
                     value = value - offset
-                    
+
                     # 軸の反転が設定されている場合は反転
-                    if key in invert_axis and invert_axis[key]:
+                    if invert_axis.get(key):
                         value = -value
-                    
+
                     # 感度の適用
                     if key in ["move_x", "move_y"]:
                         value *= sensitivity.get("move_xy", 1.0)
@@ -424,7 +424,7 @@ class ControllerManager:
                         value *= sensitivity.get("move_z", 0.7)
                     elif key == "rotation":
                         value *= sensitivity.get("rotation", 0.8)
-                    
+
                     # 対応する動きに値を割り当て
                     if key == "move_x":
                         movement["x"] = value
@@ -435,7 +435,7 @@ class ControllerManager:
                     elif key == "rotation":
                         movement["rotation"] = value
 
-        # ボタンの入力を適用（設定に基づく）
+        # ボタンの入力を適用(設定に基づく)
         button_states = raw_input["buttons"]
         if len(button_states) > 0:
             for key, button_index in button_mapping.items():
@@ -497,7 +497,7 @@ class ControllerManager:
 
         Args:
             samples: キャリブレーションのためのサンプル数
-            delay: サンプル間の遅延（秒）
+            delay: サンプル間の遅延(秒)
 
         Returns:
             bool: キャリブレーションが成功したらTrue
@@ -507,64 +507,64 @@ class ControllerManager:
             return False
 
         try:
-            self.logger.info(f"コントローラーのキャリブレーションを開始します（{samples}サンプル）")
+            self.logger.info(f"コントローラーのキャリブレーションを開始します({samples}サンプル)")
             print("コントローラーのスティックを放し、中立位置に戻してください...")
-            
+
             # キャリブレーション前の待機時間
             time.sleep(1.0)
-            
+
             # 軸のオフセット値を測定
             axis_offsets = {}
             joystick = self.controllers[self.selected_controller]["joystick"]
             num_axes = joystick.get_numaxes()
-            
+
             # 各軸のオフセットサンプルを収集
             axis_samples = {i: [] for i in range(num_axes)}
-            
+
             for sample in range(samples):
                 pygame.event.pump()  # イベントを処理して最新の状態を取得
-                
+
                 for axis in range(num_axes):
                     axis_samples[axis].append(joystick.get_axis(axis))
-                
+
                 time.sleep(delay)
                 print(f"サンプル {sample+1}/{samples} 収集中...", end="\r")
-            
+
             print("\nキャリブレーション完了!")
-            
+
             # 各軸のオフセット平均値を計算
             for axis in range(num_axes):
                 if axis_samples[axis]:
                     axis_offsets[str(axis)] = sum(axis_samples[axis]) / len(axis_samples[axis])
-            
+
             # 設定に保存
             if "calibration" not in self.config:
                 self.config["calibration"] = {}
-            
+
             self.config["calibration"]["axis_offsets"] = axis_offsets
             self.logger.info(f"軸オフセット値を設定しました: {axis_offsets}")
-            
+
             # 設定ファイルにキャリブレーション結果を保存
             self._save_config()
-            
+
             return True
-            
+
         except Exception as e:
             self.logger.error(f"キャリブレーション中にエラーが発生しました: {e}")
             return False
-    
+
     def _save_config(self):
         """現在の設定をファイルに保存する"""
         if not self.config_file:
             self.logger.warning("設定ファイルパスが指定されていないため、設定を保存できません")
             return False
-            
+
         try:
             # ディレクトリが存在しない場合は作成
             os.makedirs(os.path.dirname(os.path.abspath(self.config_file)), exist_ok=True)
-            
+
             # 設定を保存
-            with open(self.config_file, 'w', encoding='utf-8') as f:
+            with open(self.config_file, "w", encoding="utf-8") as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
             self.logger.info(f"設定をファイルに保存しました: {self.config_file}")
             return True
@@ -610,11 +610,11 @@ def test_controller_detection():
                 # キャリブレーション実行
                 print("\nキャリブレーションを開始します...")
                 if manager.calibrate_controller(samples=15):
-                    print("キャリブレーションが完了しました！")
+                    print("キャリブレーションが完了しました!")
                     print("設定ファイルに保存されました。")
                 else:
                     print("キャリブレーションに失敗しました。")
-                
+
                 # キャリブレーション後の入力テスト
                 run_input_test(manager)
             else:
@@ -648,10 +648,12 @@ def run_input_test(manager):
                 b = norm_input["buttons"]
                 print("\nNormalized Input:")
                 print(
-                    f"  Movement: X:{m['x']:.2f} Y:{m['y']:.2f} Z:{m['z']:.2f} Rotation:{m['rotation']:.2f}"
+                    f"  Movement: X:{m['x']:.2f} Y:{m['y']:.2f} Z:{m['z']:.2f} "
+                    f"Rotation:{m['rotation']:.2f}"
                 )
                 print(
-                    f"  Buttons: Takeoff:{b['takeoff']} Land:{b['land']} Emergency:{b['emergency']} Photo:{b['photo']}"
+                    f"  Buttons: Takeoff:{b['takeoff']} Land:{b['land']} "
+                    f"Emergency:{b['emergency']} Photo:{b['photo']}"
                 )
 
             time.sleep(0.1)

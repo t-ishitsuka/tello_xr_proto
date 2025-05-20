@@ -39,26 +39,59 @@ class TelloControl:
             print(f"ソケット作成失敗: {e}")
             return False
 
-    def send_command(self, command, wait_time=2):
+    def send_command(self, command, wait_time=2.0, expect_response=False):
         """
         Telloにコマンドを送信する
 
         Parameters:
             command (str): 送信するコマンド
-            wait_time (float): コマンド送信後の待機時間（秒）
+            wait_time (float): コマンド送信後の待機時間(秒)
+            expect_response (bool): レスポンスを待機するか
 
         Returns:
-            bool: 送信成功したらTrue、失敗したらFalse
+            bool | str: expect_response=Falseの場合はTrue/False、Trueの場合はレスポンス文字列
         """
         if self.sock is None:
             print("ソケットが初期化されていません")
             return False
 
         try:
+            # 送信前にソケットのタイムアウトを設定
+            self.sock.settimeout(5.0)
+            
+            # コマンドを送信
             print(f"コマンド送信: {command}")
             self.sock.sendto(command.encode("utf-8"), self.tello_address)
-            time.sleep(wait_time)  # コマンド処理時間を考慮
+            
+            # レスポンスを期待する場合
+            response = None
+            response_socket = None
+            if expect_response:
+                try:
+                    # レスポンス用のソケットを作成
+                    response_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    response_socket.bind(('', 8890))  # Telloからの応答を受け取るポート
+                    response_socket.settimeout(3.0)
+                    
+                    # レスポンス受信
+                    response_data, _ = response_socket.recvfrom(1518)
+                    response = response_data.decode(encoding="utf-8").strip()
+                    print(f"レスポンス: {response}")
+                    
+                except TimeoutError:
+                    print(f"{command} コマンドへのレスポンスがタイムアウトしました")
+                    response = None
+                finally:
+                    if response_socket:
+                        response_socket.close()
+            
+            # 処理時間を確保
+            time.sleep(wait_time)
+            
+            if expect_response:
+                return response
             return True
+            
         except Exception as e:
             print(f"コマンド送信エラー: {e}")
             return False
@@ -66,137 +99,160 @@ class TelloControl:
     def activate_sdk_mode(self):
         """
         SDKモードをアクティブ化する
-
+        
         Returns:
-            bool: 成功したらTrue
+            bool: 成功したらTrue、失敗したらFalse
         """
-        return self.send_command("command")
-
-    def start_video_stream(self):
-        """
-        ビデオストリーミングを開始する
-
-        Returns:
-            bool: 成功したらTrue
-        """
-        # SDKモードをアクティブ化
-        if not self.activate_sdk_mode():
-            return False
-
-        # ストリーミングを開始
-        if not self.send_command("streamon", wait_time=5):
-            return False
-
-        print("ビデオストリーミングを開始しました")
-        return True
-
-    def stop_video_stream(self):
-        """
-        ビデオストリーミングを停止する
-
-        Returns:
-            bool: 成功したらTrue
-        """
-        return self.send_command("streamoff")
+        return self.send_command("command", wait_time=1.0)
 
     def takeoff(self):
         """
         ドローンを離陸させる
-
+        
         Returns:
-            bool: 成功したらTrue
+            bool: 成功したらTrue、失敗したらFalse
         """
-        return self.send_command("takeoff", wait_time=5)
+        return self.send_command("takeoff", wait_time=5.0)
 
     def land(self):
         """
         ドローンを着陸させる
-
+        
         Returns:
-            bool: 成功したらTrue
+            bool: 成功したらTrue、失敗したらFalse
         """
-        return self.send_command("land", wait_time=5)
+        return self.send_command("land", wait_time=5.0)
 
     def move(self, direction, distance):
         """
-        ドローンを指定方向に移動させる
-
+        指定した方向に指定した距離だけドローンを移動させる
+        
         Parameters:
             direction (str): 移動方向 ('forward', 'back', 'left', 'right', 'up', 'down')
-            distance (int): 移動距離（cm、20-500）
-
+            distance (int): 移動距離(cm、20-500)
+        
         Returns:
-            bool: 成功したらTrue
+            bool: 成功したらTrue、失敗したらFalse
         """
-        valid_directions = ("forward", "back", "left", "right", "up", "down")
+        # 距離の範囲を確認(20-500cm)
+        if not (20 <= distance <= 500):
+            print(f"移動距離は20-500cmの範囲内である必要があります: {distance}cm")
+            return False
+        
+        # 方向を確認
+        valid_directions = ['forward', 'back', 'left', 'right', 'up', 'down']
         if direction not in valid_directions:
-            print(f"無効な移動方向です: {direction}")
+            print(f"無効な方向です: {direction}")
             return False
+        
+        # 移動コマンドを送信
+        return self.send_command(f"{direction} {distance}", wait_time=4.0)
 
-        try:
-            distance_val = int(distance)
-            if not (20 <= distance_val <= 500):
-                print(f"無効な距離です: {distance_val}cm (20-500cmの範囲で指定してください)")
-                return False
-        except ValueError:
-            print(f"無効な距離値です: {distance}")
-            return False
-
-        return self.send_command(f"{direction} {distance_val}", wait_time=4)
-
-    def rotate(self, direction, degrees):
+    def rotate(self, angle):
         """
-        ドローンを回転させる
+        ドローンを指定した角度だけ回転させる
+        
+        Parameters:
+            angle (int): 回転角度(度)、正の値で時計回り、負の値で反時計回り
+        
+        Returns:
+            bool: 成功したらTrue、失敗したらFalse
+        """
+        if angle > 0:
+            return self.send_command(f"cw {angle}", wait_time=3.0)
+        else:
+            return self.send_command(f"ccw {abs(angle)}", wait_time=3.0)
+
+    def send_rc_control(self, left_right, forward_backward, up_down, yaw):
+        """
+        RCコントロールコマンドを送信する(リアルタイムの速度制御)
 
         Parameters:
-            direction (str): 回転方向 ('cw' = 時計回り, 'ccw' = 反時計回り)
-            degrees (int): 回転角度 (1-360)
-
+            left_right (int): 左右の移動速度 (-100〜100)
+            forward_backward (int): 前後の移動速度 (-100〜100)
+            up_down (int): 上下の移動速度 (-100〜100)
+            yaw (int): 回転速度 (-100〜100)
+        
         Returns:
-            bool: 成功したらTrue
+            bool: 成功したらTrue、失敗したらFalse
         """
-        if direction not in ("cw", "ccw"):
-            print(f"無効な回転方向です: {direction}")
-            return False
-
-        try:
-            degrees_val = int(degrees)
-            if not (1 <= degrees_val <= 360):
-                print(f"無効な回転角度です: {degrees_val} (1-360度の範囲で指定してください)")
-                return False
-        except ValueError:
-            print(f"無効な角度値です: {degrees}")
-            return False
-
-        return self.send_command(f"{direction} {degrees_val}", wait_time=3)
-
-    def send_rc_control(self, left_right: int, forward_backward: int, up_down: int, yaw: int) -> bool:
-        """
-        RCコントロールコマンドを送信する（リアルタイムの速度制御）
-
-        Parameters:
-            left_right (int): 左右の速度 (-100 ~ +100, 右が正)
-            forward_backward (int): 前後の速度 (-100 ~ +100, 前が正)
-            up_down (int): 上下の速度 (-100 ~ +100, 上が正)
-            yaw (int): 回転速度 (-100 ~ +100, 右回りが正)
-
-        Returns:
-            bool: 成功したらTrue
-        """
-        # 値の範囲を制限
+        # 値の範囲を-100〜100に制限
         left_right = max(-100, min(100, int(left_right)))
         forward_backward = max(-100, min(100, int(forward_backward)))
         up_down = max(-100, min(100, int(up_down)))
         yaw = max(-100, min(100, int(yaw)))
         
-        # rcコマンドの送信（待機時間はほぼ0）
-        return self.send_command(
-            f"rc {left_right} {forward_backward} {up_down} {yaw}", 
-            wait_time=0.05
+        # rcコマンドの送信(待機時間はほぼ0)
+        result = self.send_command(
+            f"rc {left_right} {forward_backward} {up_down} {yaw}", wait_time=0.05
         )
+        # 文字列や他の型の場合はTrueと見なす(正常に送信された)
+        return bool(result)
+
+    def start_video_stream(self):
+        """
+        ビデオストリーミングを開始する
+        
+        Returns:
+            bool: 成功したらTrue、失敗したらFalse
+        """
+        return self.send_command("streamon", wait_time=2.0)
+
+    def stop_video_stream(self):
+        """
+        ビデオストリーミングを停止する
+        
+        Returns:
+            bool: 成功したらTrue、失敗したらFalse
+        """
+        return self.send_command("streamoff", wait_time=1.0)
+
+    def get_battery(self):
+        """
+        バッテリー残量を取得する
+        
+        Returns:
+            int: バッテリー残量(%)、エラー時は-1
+        """
+        response = self.send_command("battery?", wait_time=0.5, expect_response=True)
+        try:
+            if response and isinstance(response, str) and response.isdigit():
+                return int(response)
+            return -1
+        except (ValueError, TypeError):
+            return -1
+
+    def get_telemetry_data(self):
+        """
+        テレメトリーデータを取得する
+        
+        Returns:
+            dict: テレメトリーデータ(高度、姿勢、速度など)、エラー時はNone
+        """
+        # Telloから状態情報を取得
+        response = self.send_command("state?", wait_time=0.5, expect_response=True)
+        if not response or not isinstance(response, str):
+            return None
+        
+        try:
+            # レスポンスをキーと値のペアに分割
+            data = {}
+            for pair in response.split(';'):
+                if not pair:
+                    continue
+                key, _, value = pair.partition(':')
+                # 数値に変換可能な値を変換
+                try:
+                    data[key] = float(value)
+                except ValueError:
+                    data[key] = value
+            return data
+        except Exception as e:
+            print(f"テレメトリーデータの解析エラー: {e}")
+            return None
 
     def close(self):
-        """ソケット接続を閉じる"""
+        """ソケットを閉じる"""
         if self.sock:
             self.sock.close()
             self.sock = None

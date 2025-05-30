@@ -32,6 +32,11 @@ class ControllerManager:
         self.config = {}
         self.config_file = config_file
         self.load_config()
+        
+        # 速度制御関連の初期化
+        self.current_speed_mode = self.config.get("speed_control", {}).get("default_mode", "medium")
+        self.previous_button_states = {"speed_mode_up": False, "speed_mode_down": False}
+        self.previous_movement_values = {"x": 0.0, "y": 0.0, "z": 0.0, "rotation": 0.0}
 
     def _setup_logging(self):
         """Set up logging configuration."""
@@ -93,15 +98,39 @@ class ControllerManager:
                 "land": 1,  # B/Oボタン: 着陸
                 "emergency": 2,  # X/□ボタン: 緊急停止
                 "photo": 3,  # Y/△ボタン: 写真撮影
+                "speed_mode_up": 4,  # LBボタン: 速度モード上昇
+                "speed_mode_down": 5,  # RBボタン: 速度モード下降
             },
             "invert_axis": {
                 "move_y": True,  # 前後移動は反転(前進が-1)
                 "move_z": True,  # 上下移動は反転(上昇が-1)
             },
             "sensitivity": {
-                "move_xy": 1.0,  # 水平移動の感度
-                "move_z": 0.7,  # 垂直移動の感度
-                "rotation": 0.8,  # 回転の感度
+                "move_xy": 0.6,  # 水平移動の感度（デフォルト値を下げる）
+                "move_z": 0.5,  # 垂直移動の感度（デフォルト値を下げる）
+                "rotation": 0.6,  # 回転の感度（デフォルト値を下げる）
+            },
+            "speed_control": {
+                "default_mode": "medium",
+                "modes": {
+                    "low": {
+                        "scale": 0.3,
+                        "max_acceleration": 0.2,
+                        "name": "低速"
+                    },
+                    "medium": {
+                        "scale": 0.6,
+                        "max_acceleration": 0.4,
+                        "name": "中速"
+                    },
+                    "high": {
+                        "scale": 1.0,
+                        "max_acceleration": 0.8,
+                        "name": "高速"
+                    }
+                },
+                "smooth_acceleration": True,
+                "acceleration_filter": 0.1
             },
         }
 
@@ -453,9 +482,16 @@ class ControllerManager:
                 # デッドゾーン以上の値を-1-0の範囲に再マッピング
                 movement[key] = (movement[key] + deadzone) / (1 - deadzone)
 
+        # 速度モード切り替えボタンの処理
+        self._handle_speed_mode_buttons(buttons)
+        
+        # 速度制御の適用
+        movement = self._apply_speed_control(movement)
+        
         return {
             "movement": movement,
             "buttons": buttons,
+            "speed_mode": self.current_speed_mode,
         }
 
     def read_all_inputs(self) -> dict:
@@ -571,6 +607,102 @@ class ControllerManager:
         except Exception as e:
             self.logger.error(f"設定ファイルの保存中にエラーが発生しました: {e}")
             return False
+
+    def _handle_speed_mode_buttons(self, buttons):
+        """
+        速度モード切り替えボタンの処理
+        
+        Args:
+            buttons (dict): ボタンの状態辞書
+        """
+        speed_control = self.config.get("speed_control", {})
+        available_modes = list(speed_control.get("modes", {}).keys())
+        
+        if not available_modes:
+            return
+        
+        # 速度モード上昇ボタン（前回押されていなくて今回押された場合）
+        if buttons.get("speed_mode_up", False) and not self.previous_button_states.get("speed_mode_up", False):
+            current_index = available_modes.index(self.current_speed_mode) if self.current_speed_mode in available_modes else 1
+            next_index = (current_index + 1) % len(available_modes)
+            self.current_speed_mode = available_modes[next_index]
+            mode_name = speed_control["modes"][self.current_speed_mode].get("name", self.current_speed_mode)
+            self.logger.info(f"速度モードを変更: {mode_name}")
+        
+        # 速度モード下降ボタン（前回押されていなくて今回押された場合）
+        if buttons.get("speed_mode_down", False) and not self.previous_button_states.get("speed_mode_down", False):
+            current_index = available_modes.index(self.current_speed_mode) if self.current_speed_mode in available_modes else 1
+            prev_index = (current_index - 1) % len(available_modes)
+            self.current_speed_mode = available_modes[prev_index]
+            mode_name = speed_control["modes"][self.current_speed_mode].get("name", self.current_speed_mode)
+            self.logger.info(f"速度モードを変更: {mode_name}")
+        
+        # 前回のボタン状態を更新
+        self.previous_button_states["speed_mode_up"] = buttons.get("speed_mode_up", False)
+        self.previous_button_states["speed_mode_down"] = buttons.get("speed_mode_down", False)
+
+    def _apply_speed_control(self, movement):
+        """
+        速度制御の適用（スケーリングと加速度制限）
+        
+        Args:
+            movement (dict): 基本的な移動値の辞書
+            
+        Returns:
+            dict: 速度制御を適用した移動値の辞書
+        """
+        speed_control = self.config.get("speed_control", {})
+        current_mode_config = speed_control.get("modes", {}).get(self.current_speed_mode, {})
+        
+        # 速度スケールの適用
+        scale = current_mode_config.get("scale", 1.0)
+        scaled_movement = {key: value * scale for key, value in movement.items()}
+        
+        # 加速度制限の適用（滑らかな操作のため）
+        if speed_control.get("smooth_acceleration", False):
+            max_acceleration = current_mode_config.get("max_acceleration", 1.0)
+            acceleration_filter = speed_control.get("acceleration_filter", 0.1)
+            
+            for key in scaled_movement:
+                prev_value = self.previous_movement_values.get(key, 0.0)
+                current_value = scaled_movement[key]
+                
+                # 加速度制限の計算
+                max_change = max_acceleration
+                value_change = current_value - prev_value
+                
+                if abs(value_change) > max_change:
+                    # 変化量を制限
+                    limited_change = max_change if value_change > 0 else -max_change
+                    current_value = prev_value + limited_change
+                
+                # ローパスフィルターの適用（さらなる滑らかさのため）
+                filtered_value = prev_value + (current_value - prev_value) * acceleration_filter
+                scaled_movement[key] = filtered_value
+                
+                # 前回値を更新
+                self.previous_movement_values[key] = filtered_value
+        
+        return scaled_movement
+
+    def get_current_speed_mode(self):
+        """
+        現在の速度モードを取得
+        
+        Returns:
+            str: 現在の速度モード名
+        """
+        return self.current_speed_mode
+
+    def get_speed_mode_info(self):
+        """
+        現在の速度モードの詳細情報を取得
+        
+        Returns:
+            dict: 速度モードの設定情報
+        """
+        speed_control = self.config.get("speed_control", {})
+        return speed_control.get("modes", {}).get(self.current_speed_mode, {})
 
 
 # Simple test function

@@ -111,7 +111,17 @@ def main():
         print(" - A/Xボタン: 離陸")
         print(" - B/Oボタン: 着陸")
         print(" - X/□ボタン: 緊急停止")
+        print(" - LB/L1ボタン: 速度モード上昇")
+        print(" - RB/R1ボタン: 速度モード下降")
         print(" - iキー: UI情報表示の切り替え")
+        
+        # 現在の速度モードを表示
+        if controller and controller.is_controller_available():
+            current_mode = controller.get_current_speed_mode()
+            mode_info = controller.get_speed_mode_info()
+            mode_name = mode_info.get("name", current_mode)
+            print(f"初期速度モード: {mode_name}")
+        print()
 
         # ボタン状態の前回値(連続実行防止用)
         prev_button_states = {"takeoff": False, "land": False, "emergency": False, "photo": False}
@@ -256,6 +266,12 @@ def main():
 
                         # コントローラー入力をスレッドに共有
                         drone_state["last_controller_input"] = input_data
+                        
+                        # 速度モード情報をdrone_stateに保存
+                        if "speed_mode" in input_data:
+                            drone_state["current_speed_mode"] = input_data["speed_mode"]
+                            if controller:
+                                drone_state["speed_mode_info"] = controller.get_speed_mode_info()
 
                         # 前回のボタン状態を更新
                         prev_button_states = button_states.copy()

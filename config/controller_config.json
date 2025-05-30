@@ -10,15 +10,39 @@
     "takeoff": 0,
     "land": 1,
     "emergency": 2,
-    "photo": 3
+    "photo": 3,
+    "speed_mode_up": 4,
+    "speed_mode_down": 5
   },
   "invert_axis": {
     "move_y": true,
     "move_z": true
   },
   "sensitivity": {
-    "move_xy": 1.0,
-    "move_z": 0.7,
-    "rotation": 0.8
+    "move_xy": 0.6,
+    "move_z": 0.5,
+    "rotation": 0.6
+  },
+  "speed_control": {
+    "default_mode": "medium",
+    "modes": {
+      "low": {
+        "scale": 0.3,
+        "max_acceleration": 0.2,
+        "name": "低速"
+      },
+      "medium": {
+        "scale": 0.6,
+        "max_acceleration": 0.4,
+        "name": "中速"
+      },
+      "high": {
+        "scale": 1.0,
+        "max_acceleration": 0.8,
+        "name": "高速"
+      }
+    },
+    "smooth_acceleration": true,
+    "acceleration_filter": 0.1
   }
 }
